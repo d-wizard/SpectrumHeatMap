@@ -10,8 +10,11 @@
 
 #include "fftHelper.h"
 #include "hsvrgb.h"
+#include <random>
 
 #include "smartPlotMessage.h"
+
+std::default_random_engine generator;
 
 void makeComplexSineWave(double sampRate, double waveFreq, size_t numSamp, dubVect& re, dubVect& im)
 {
@@ -24,6 +27,18 @@ void makeComplexSineWave(double sampRate, double waveFreq, size_t numSamp, dubVe
       re[i] = cos(phase);
       im[i] = sin(phase);
       phase += phaseIncr;
+   }
+}
+
+void addRandom(dubVect& re, dubVect& im)
+{
+   double randVal = 0.08;
+   std::uniform_real_distribution<double> distribution(-randVal, randVal);
+   size_t numSamp = std::min(re.size(), im.size());
+   for(size_t i = 0; i < numSamp; ++i)
+   {
+      re[i] += distribution(generator);
+      im[i] += distribution(generator);
    }
 }
 
@@ -104,10 +119,13 @@ void MainWindow::displayHeatMap()
    dubVect re;
    dubVect im;
    dubVect fft;
-   makeComplexSineWave(64e3, 8e3, width, re, im);
-   complexPowerFFT(re, im, fft);
+   double toneFreq = 8e3;
    for(int i = 0; i < height; ++i)
    {
+      makeComplexSineWave(64e3, toneFreq, width, re, im);
+      addRandom(re, im);
+      toneFreq += 1e3;
+      complexPowerFFT(re, im, fft);
       fftToRgb(fft, pixelWritePtr);
       pixelWritePtr += (3*width);
    }
