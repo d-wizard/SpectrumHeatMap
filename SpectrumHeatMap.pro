@@ -17,6 +17,7 @@ contains(QT_ARCH, i386) {
 FFTWDIR = ../fftw-dll
 
 SOURCES += \
+    FileToHeatMap.cpp \
     fftHelper.cpp \
     hsvrgb.cpp \
     main.cpp \
@@ -25,6 +26,7 @@ SOURCES += \
     plotperfectclient/smartPlotMessage.cpp
 
 HEADERS += \
+    FileToHeatMap.h \
     fftHelper.h \
     hsvrgb.h \
     mainwindow.h

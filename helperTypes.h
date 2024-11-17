@@ -16,18 +16,11 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef PlotHelperTypes_h
-#define PlotHelperTypes_h
+#ifndef HelperTypes_h
+#define HelperTypes_h
 
 #include <vector>
 
-
-#include <QString>
-#include <QStringList>
-#include <QList>
-#include <QVector>
-#include <QString>
-#include <QDateTime>
 #include <limits>  // std::numeric_limits
 #include <cmath>   // std::isfinite
 
