@@ -1,3 +1,6 @@
 [submodule "plotperfectclient"]
 	path = plotperfectclient
 	url = https://github.com/d-wizard/plotperfectclient.git
+[submodule "BitmapPlusPlus"]
+	path = BitmapPlusPlus
+	url = https://github.com/baderouaich/BitmapPlusPlus.git
