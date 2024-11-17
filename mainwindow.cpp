@@ -11,6 +11,8 @@
 #include "fftHelper.h"
 #include "hsvrgb.h"
 
+#include "smartPlotMessage.h"
+
 void makeComplexSineWave(double sampRate, double waveFreq, size_t numSamp, dubVect& re, dubVect& im)
 {
    re.resize(numSamp);
@@ -41,7 +43,7 @@ void complexPowerFFT(dubVect& re, dubVect& im, dubVect& out)
 void fftToRgb(dubVect& fft, char* rgbWritePtr)
 {
    size_t numSamp = fft.size();
-   HsvColor hsv = {0,0,0};
+   HsvColor hsv = {0,0xff,0xff};
 
    constexpr double MAX_DB_FS_VAL = 0;
    constexpr double MIN_DB_FS_VAL = -90;
@@ -52,12 +54,15 @@ void fftToRgb(dubVect& fft, char* rgbWritePtr)
       double normVal = (fft[i] - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
       if(normVal > 1.0){normVal = 1.0;}
       if(normVal < 0.0){normVal = 0.0;}
-      hsv.h = uint8_t(normVal*255.0);
+      hsv.h = uint8_t(normVal*100.0+155.0);
       auto rgb = HsvToRgb(hsv);
       rgbWritePtr[3*i+0] = rgb.r;
       rgbWritePtr[3*i+1] = rgb.g;
       rgbWritePtr[3*i+2] = rgb.b;
+
+      smartPlot_1D(&normVal, E_FLOAT_64, 1, numSamp*10, -1, "normVal", "normVal");
    }
+
 }
 
 void MainWindow::displayTestSquare()
@@ -83,8 +88,8 @@ void MainWindow::displayTestSquare()
 
 void MainWindow::displayHeatMap()
 {
-   int height = 256; // FFT Size
-   int width = 768;
+   int height = 768;
+   int width = 256; // FFT Size
 
    // Write the header
    QString header = QString("P6 %1 %2 255 ").arg(width).arg(height);
@@ -99,12 +104,12 @@ void MainWindow::displayHeatMap()
    dubVect re;
    dubVect im;
    dubVect fft;
-   makeComplexSineWave(64e3, 8e3, height, re, im);
+   makeComplexSineWave(64e3, 8e3, width, re, im);
    complexPowerFFT(re, im, fft);
-   for(int i = 0; i < width; ++i)
+   for(int i = 0; i < height; ++i)
    {
       fftToRgb(fft, pixelWritePtr);
-      pixelWritePtr += (3*height);
+      pixelWritePtr += (3*width);
    }
 
    QPixmap pixmap(height, width);

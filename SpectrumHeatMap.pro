@@ -20,7 +20,9 @@ SOURCES += \
     fftHelper.cpp \
     hsvrgb.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    plotperfectclient/sendMemoryToPlot.cpp \
+    plotperfectclient/smartPlotMessage.cpp
 
 HEADERS += \
     fftHelper.h \
@@ -30,7 +32,10 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
+INCLUDEPATH += plotperfectclient
+
 INCLUDEPATH += $$FFTWDIR
+
 win32 {
     LIBS += -lws2_32
     LIBS += -L$$FFTWDIR/$$ARCHDIR -lfftw3-3
