@@ -13,7 +13,13 @@ public:
    FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts);
    virtual ~FileToHeatMap();
 
-   void run();
+   void genHeatMap();
+
+   void saveBmp(const std::string& savePath);
+
+   size_t getFftSize(){return m_fftSize;}
+   size_t getNumFfts(){return m_numFfts;}
+   uint8_t* getRgb(){return m_rgb.data();}
 
 private:
    // Make uncopyable

@@ -1,6 +1,7 @@
 #include "FileToHeatMap.h"
 #include "fftHelper.h"
 #include "hsvrgb.h"
+#include "BitmapPlusPlus.hpp"
 
 
 FileToHeatMap::FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts)
@@ -20,7 +21,7 @@ FileToHeatMap::FileToHeatMap(const std::string& filePath, double sampleRate, siz
 
       m_numSamples = m_fileSizeBytes / 4;
 
-      m_sampBetweenFfts = size_t(m_sampleRate / m_timeBetweenFfts + 0.5);
+      m_sampBetweenFfts = size_t(m_sampleRate * m_timeBetweenFfts + 0.5);
       m_numFfts = m_numSamples / m_sampBetweenFfts;
 
       m_rgb.resize(3*m_numFfts*m_fftSize);
@@ -35,7 +36,7 @@ FileToHeatMap::~FileToHeatMap()
    
 }
 
-void FileToHeatMap::run()
+void FileToHeatMap::genHeatMap()
 {
    auto fftParam = std::make_shared<tFftParam>(m_fftSize);
    for(size_t fftNum = 0; fftNum < m_numFfts; ++fftNum)
@@ -68,7 +69,7 @@ void FileToHeatMap::doFft(std::shared_ptr<tFftParam> param)
    HsvColor hsv = {0,0xff,0xff};
 
    constexpr double MAX_DB_FS_VAL = 90;
-   constexpr double MIN_DB_FS_VAL = 0;
+   constexpr double MIN_DB_FS_VAL = -30;
    constexpr double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
 
    double* fftRe = param->fftRe.data();
@@ -81,11 +82,25 @@ void FileToHeatMap::doFft(std::shared_ptr<tFftParam> param)
       double normVal = (fftDb - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
       if(normVal > 1.0){normVal = 1.0;}
       if(normVal < 0.0){normVal = 0.0;}
-      hsv.h = uint8_t(normVal*100.0+155.0);
+
+      hsv.h = uint8_t((1.0-normVal)*200.0);
       auto rgb = HsvToRgb(hsv);
       rgbWritePtr[3*i+0] = rgb.r;
       rgbWritePtr[3*i+1] = rgb.g;
       rgbWritePtr[3*i+2] = rgb.b;
    }
-   
+}
+
+void FileToHeatMap::saveBmp(const std::string& savePath)
+{
+   bmp::Bitmap image(m_fftSize, m_numFfts);
+   size_t i = 0;
+   for (bmp::Pixel &pixel: image)
+   {
+      pixel.r = m_rgb[3*i+0];
+      pixel.g = m_rgb[3*i+1];
+      pixel.b = m_rgb[3*i+2];
+      ++i;
+   }
+   image.save(savePath);
 }
