@@ -16,12 +16,58 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include <unistd.h>
 #include "FileToHeatMap.h"
 
-int main()
+int main(int argc, char *argv[])
 {
-   FileToHeatMap f2hm("/path/to/read.iq", 48e3, 1536, 1e-3);
-   f2hm.genHeatMap();
-   f2hm.saveBmp("/path/to/write.iq");
+   int option = -1;
+   std::string inPath;
+   double sampleRate = 0;
+   size_t fftSize = 0;
+   double timeBetweenFfts = 0;
+   std::string outPath;
+
+   const char* argStr = "i:o:s:f:t:h";
+   while((option = getopt(argc, argv, argStr)) != -1)
+   {
+      switch(option)
+      {
+      case 'i':
+         inPath = std::string(optarg);
+      break;
+      case 'o':
+         outPath = std::string(optarg);
+      break;
+      case 's':
+         sampleRate = strtod(optarg, nullptr);
+      break;
+      case 'f':
+         fftSize = strtoul(optarg, nullptr, 10);
+      break;
+      case 't':
+         timeBetweenFfts = strtod(optarg, nullptr);
+      break;
+      case 'h':
+         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n");
+         exit(0);
+      break;
+      default:
+         // invalid arg
+      break;
+      }
+   }
+
+   if(inPath != "" && sampleRate > 0 && fftSize > 0 && timeBetweenFfts > 0 && outPath != "")
+   {
+      FileToHeatMap f2hm(inPath, sampleRate, fftSize, timeBetweenFfts);
+      f2hm.genHeatMap();
+      f2hm.saveBmp(outPath);
+   }
+   else
+   {
+      printf("Invalid input config\n");
+   }
+
 }
 
