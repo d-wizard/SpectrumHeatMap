@@ -15,7 +15,7 @@ public:
 
    void genHeatMap();
 
-   void saveBmp(const std::string& savePath);
+   void saveBmp(const std::string& savePath, bool rotate = false);
 
    size_t getFftSize(){return m_fftSize;}
    size_t getNumFfts(){return m_numFfts;}

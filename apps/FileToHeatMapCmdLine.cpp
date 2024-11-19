@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
    {
       FileToHeatMap f2hm(inPath, sampleRate, fftSize, timeBetweenFfts);
       f2hm.genHeatMap();
-      f2hm.saveBmp(outPath);
+      f2hm.saveBmp(outPath, true);
    }
    else
    {
