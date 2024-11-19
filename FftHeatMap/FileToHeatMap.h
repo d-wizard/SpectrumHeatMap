@@ -35,7 +35,10 @@ private:
       std::vector<double> qSamples;
       std::vector<double> fftRe;
       std::vector<double> fftIm;
-      uint8_t* rgbPtr;
+
+      double* fftWritePtr;
+      double fftMax;
+      double fftMin;
 
       tFftParam(size_t fftSize): iqSamples(2*fftSize), iSamples(fftSize), qSamples(fftSize), fftRe(fftSize), fftIm(fftSize){}
    }tFftParam;
@@ -51,10 +54,13 @@ private:
    std::ifstream m_fileStream;
    size_t m_fileSizeBytes = 0;
 
+   std::vector<double> m_fft_dB;
+
    std::vector<uint8_t> m_rgb;
 
    void readFromFile(std::shared_ptr<tFftParam> param, size_t fftNum);
    void doFft(std::shared_ptr<tFftParam> param);
+   void fftToRgb();
 
 };
 
