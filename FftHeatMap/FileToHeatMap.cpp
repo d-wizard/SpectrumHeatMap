@@ -3,6 +3,8 @@
 #include "hsvrgb.h"
 #include "BitmapPlusPlus.hpp"
 
+#define FORCE_HUE_FFT
+
 
 FileToHeatMap::FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts)
    : m_filePath(filePath)
@@ -97,7 +99,9 @@ void FileToHeatMap::fftToRgb()
    constexpr double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
 
    uint8_t* rgbWritePtr = m_rgb.data();
-
+#ifdef FORCE_HUE_FFT
+   size_t fftBin = 0;
+#endif
    for(size_t i = 0; i < m_fftSize*m_numFfts; ++i)
    {
       double normVal = (m_fft_dB[i] - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
@@ -105,6 +109,9 @@ void FileToHeatMap::fftToRgb()
       if(normVal < 0.0){normVal = 0.0;}
 
       hsv.h = uint8_t((1.0-normVal)*200.0);
+#ifdef FORCE_HUE_FFT
+      hsv.h = uint8_t(double(fftBin)*255.0/double(m_fftSize)); if(++fftBin >= m_fftSize){fftBin=0;}
+#endif
       auto rgb = HsvToRgb(hsv);
       rgbWritePtr[3*i+0] = rgb.r;
       rgbWritePtr[3*i+1] = rgb.g;
