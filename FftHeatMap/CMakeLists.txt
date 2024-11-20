@@ -27,7 +27,8 @@ set(includes
 set(source
    fftHelper.cpp
    FileToHeatMap.cpp
-   hsvrgb.cpp)
+   hsvrgb.cpp
+   LevelToHeatMap.cpp)
 
 # Libraries
 set(libs

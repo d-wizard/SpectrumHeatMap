@@ -171,13 +171,14 @@ void FileToHeatMap::fftToRgb()
    uint8_t* rgbWritePtr = m_rgb.data();
    for(size_t i = 0; i < m_fftSize*m_numFfts; ++i)
    {
-      HsvColor hsv = {0,0xff,0xff};
       double normVal = (m_fft_dB[i] - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
       if(normVal > 1.0){normVal = 1.0;}
       if(normVal < 0.0){normVal = 0.0;}
+      uint8_t fftNormVal = uint8_t((1.0-normVal)*255.0);
 
-      hsv.h = uint8_t((1.0-normVal)*255.0);
-
+#if 0 // HUE Based
+      HsvColor hsv = {0,0xff,0xff};
+      hsv.h = fftNormVal;
 #ifdef FORCE_HUE_FFT
       hsv.h = uint8_t(double(fftBin)*255.0/double(m_fftSize));
 #endif
@@ -192,6 +193,14 @@ void FileToHeatMap::fftToRgb()
 #ifdef FORCE_HUE_FFT
       if(++fftBin >= m_fftSize){fftBin=0;}
 #endif
+#else
+      // Lookup table based
+      extern RgbColor LevelToRgbLookup[256];
+      rgbWritePtr[3*i+0] = LevelToRgbLookup[fftNormVal].r;
+      rgbWritePtr[3*i+1] = LevelToRgbLookup[fftNormVal].g;
+      rgbWritePtr[3*i+2] = LevelToRgbLookup[fftNormVal].b;
+#endif
+
    }
 }
 
