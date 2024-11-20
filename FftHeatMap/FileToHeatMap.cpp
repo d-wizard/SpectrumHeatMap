@@ -67,6 +67,16 @@ std::shared_ptr<FileToHeatMap::tFftParam> FileToHeatMap::getAvailableFftThread(s
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void FileToHeatMap::waitForFinish(std::unique_lock<std::mutex>& lock)
+{
+   while(m_fftThreadsAvailable.size() < m_numThreads)
+   {
+      m_threadCondVar.wait(lock);
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 void FileToHeatMap::genHeatMap()
 {
    std::unique_lock<std::mutex> lock(m_threadMutex);
@@ -77,6 +87,7 @@ void FileToHeatMap::genHeatMap()
       fftParam->fftThread = std::thread(&FileToHeatMap::doFft, this, fftParam);
       fftParam->fftThread.detach();
    }
+   waitForFinish(lock);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

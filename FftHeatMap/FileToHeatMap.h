@@ -87,6 +87,8 @@ private:
    // Private Member Functions
    /////////////////////////////////////////////////////////////////////////////
    std::shared_ptr<tFftParam> getAvailableFftThread(std::unique_lock<std::mutex>& lock);
+   void waitForFinish(std::unique_lock<std::mutex>& lock);
+
 
    void readFromFile(std::shared_ptr<tFftParam> param, size_t fftNum);
    void doFft(std::shared_ptr<tFftParam> param);
