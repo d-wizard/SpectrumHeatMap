@@ -1,4 +1,4 @@
-/* Copyright 2013 - 2015, 2017, 2019 Dan Williams. All Rights Reserved.
+/* Copyright 2013 - 2015, 2017, 2019, 2024 Dan Williams. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
  * software and associated documentation files (the "Software"), to deal in the Software
@@ -69,7 +69,7 @@ static void fixStartNanReal(fftw_complex* in, unsigned int N)
    }
 }
 
-void complexFFT(const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVect& outIm, double *windowCoef)
+void complexFFT(std::unique_lock<std::mutex>& lock, const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVect& outIm, double *windowCoef)
 {
    fftw_complex *in, *out;
    fftw_plan p;
@@ -103,7 +103,9 @@ void complexFFT(const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVec
 
        p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 
+       lock.unlock();
        fftw_execute(p);
+       lock.lock();
 
        fftw_destroy_plan(p);
 

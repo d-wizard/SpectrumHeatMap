@@ -21,14 +21,15 @@
 
 int main(int argc, char *argv[])
 {
-   int option = -1;
    std::string inPath;
    double sampleRate = 0;
    size_t fftSize = 0;
    double timeBetweenFfts = 0;
+   size_t numThreads = 1;
    std::string outPath;
 
-   const char* argStr = "i:o:s:f:t:h";
+   const char* argStr = "i:o:s:f:t:j:h";
+   int option = -1;
    while((option = getopt(argc, argv, argStr)) != -1)
    {
       switch(option)
@@ -48,8 +49,11 @@ int main(int argc, char *argv[])
       case 't':
          timeBetweenFfts = strtod(optarg, nullptr);
       break;
+      case 'j':
+         numThreads = strtoul(optarg, nullptr, 10);
+      break;
       case 'h':
-         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n");
+         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n -j : Num Threads\n");
          exit(0);
       break;
       default:
@@ -60,7 +64,7 @@ int main(int argc, char *argv[])
 
    if(inPath != "" && sampleRate > 0 && fftSize > 0 && timeBetweenFfts > 0 && outPath != "")
    {
-      FileToHeatMap f2hm(inPath, sampleRate, fftSize, timeBetweenFfts);
+      FileToHeatMap f2hm(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads);
       f2hm.genHeatMap();
       f2hm.saveBmp(outPath, true);
    }
