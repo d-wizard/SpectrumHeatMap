@@ -28,6 +28,17 @@ FileToHeatMap::FileToHeatMap(const std::string& filePath, double sampleRate, siz
       m_sampBetweenFfts = size_t(m_sampleRate * m_timeBetweenFfts + 0.5);
       m_numFfts = m_numSamples / m_sampBetweenFfts;
 
+      // Make sure FFTs don't extend beyond the end of the file.
+      if(m_numFfts > 0)
+      {
+         size_t stopIndex = (m_numFfts-1) * m_sampBetweenFfts + m_fftSize;
+         while(m_numFfts > 0 && stopIndex > m_numSamples)
+         {
+            --m_numFfts;
+            stopIndex = (m_numFfts-1) * m_sampBetweenFfts + m_fftSize;
+         }
+      }
+
       m_rgb.resize(3*m_numFfts*m_fftSize);
       m_fft_dB.resize(m_numFfts*m_fftSize);
 
