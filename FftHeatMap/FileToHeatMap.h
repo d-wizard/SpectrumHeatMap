@@ -22,7 +22,7 @@ public:
    // Public Constants
    static constexpr size_t COMPLEX_SAMP_SIZE = 2*sizeof(tSampType);
 public:
-   FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads = 1);
+   FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads, int64_t startPosition = 0, int64_t endPosition = 0);
    virtual ~FileToHeatMap();
 
    void genHeatMap();
@@ -75,6 +75,7 @@ private:
 
    std::ifstream m_fileStream;
    size_t m_fileSizeBytes = 0;
+   size_t m_fileStartOffset = 0;
 
    // FFT Results
    std::vector<double> m_fft_dB;
@@ -107,7 +108,7 @@ private:
 
 
 template<typename tSampType>
-FileToHeatMap<tSampType>::FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads)
+FileToHeatMap<tSampType>::FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads, int64_t startPosition, int64_t endPosition)
    : m_filePath(filePath)
    , m_sampleRate(sampleRate)
    , m_fftSize(fftSize)
@@ -123,7 +124,44 @@ FileToHeatMap<tSampType>::FileToHeatMap(const std::string& filePath, double samp
       m_fileSizeBytes = (size_t)m_fileStream.tellg();
       m_fileStream.seekg(0, std::ios::beg); // Set back to the beginning
 
-      m_numSamples = m_fileSizeBytes / COMPLEX_SAMP_SIZE;
+      // Convert input postion Values to within range of the file (interpret as slicing indexes)
+      bool validStartEndPos = true;
+      int64_t fileSizeBytesSigned = int64_t(m_fileSizeBytes);
+      if(validStartEndPos)
+      {
+         if(startPosition < 0)
+         {
+            startPosition += fileSizeBytesSigned;
+            if(startPosition < 0)
+               validStartEndPos = false; // Invalid. Drop the entire file.
+         }
+         else if(startPosition >= fileSizeBytesSigned)
+            validStartEndPos = false; // Not enough data in the file. Drop the entire file.
+      }
+      if(validStartEndPos)
+      {
+         if(endPosition <= 0)
+         {
+            endPosition += fileSizeBytesSigned;
+            if(endPosition <= 0)
+               validStartEndPos = false; // Invalid. Drop the entire file.
+         }
+         else if(endPosition > fileSizeBytesSigned)
+         {
+            validStartEndPos = false; // Not enough data in the file. Drop the entire file.
+         }
+      }
+      if(startPosition >= endPosition)
+         validStartEndPos = false; // Not enough data in the file. Drop the entire file.
+
+
+      if(validStartEndPos)
+      {
+         m_numSamples = (endPosition - startPosition) / COMPLEX_SAMP_SIZE;
+         m_fileStartOffset = startPosition;
+      }
+      else
+         m_numSamples = 0;
 
       m_sampBetweenFfts = size_t(m_sampleRate * m_timeBetweenFfts + 0.5);
       m_numFfts = m_numSamples / m_sampBetweenFfts;
@@ -198,7 +236,7 @@ void FileToHeatMap<tSampType>::genHeatMap()
 template<typename tSampType>
 void FileToHeatMap<tSampType>::readFromFile(std::shared_ptr<tFftParam> param, size_t fftNum)
 {
-   m_fileStream.seekg(COMPLEX_SAMP_SIZE*fftNum*m_sampBetweenFfts, std::ios::beg);
+   m_fileStream.seekg(COMPLEX_SAMP_SIZE*fftNum*m_sampBetweenFfts+m_fileStartOffset, std::ios::beg);
    m_fileStream.read(reinterpret_cast<char*>(param->iqSamples.data()), COMPLEX_SAMP_SIZE*m_fftSize);
    param->fftWritePtr = &m_fft_dB[fftNum*m_fftSize];
 }

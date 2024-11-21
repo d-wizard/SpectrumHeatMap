@@ -21,9 +21,9 @@
 
 
 template<typename tSampType>
-void GenHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads, const std::string& outPath)
+void GenHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads, int64_t startPosition, int64_t endPosition, const std::string& outPath)
 {
-   FileToHeatMap<tSampType> f2hm(filePath, sampleRate, fftSize, timeBetweenFfts, numThreads);
+   FileToHeatMap<tSampType> f2hm(filePath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition);
    f2hm.genHeatMap();
    f2hm.saveBmp(outPath, true);
 }
@@ -37,8 +37,10 @@ int main(int argc, char *argv[])
    size_t numThreads = 1;
    std::string outPath;
    std::string inputFormat;
+   int64_t startPosition = 0;
+   int64_t endPosition = 0;
 
-   const char* argStr = "i:o:s:f:t:j:y:h";
+   const char* argStr = "i:o:s:f:t:j:y:S:E:h";
    int option = -1;
    while((option = getopt(argc, argv, argStr)) != -1)
    {
@@ -65,8 +67,14 @@ int main(int argc, char *argv[])
       case 'y':
          inputFormat = std::string(optarg);
       break;
+      case 'S':
+         startPosition = strtoll(optarg, nullptr, 10);
+      break;
+      case 'E':
+         endPosition = strtoll(optarg, nullptr, 10);
+      break;
       case 'h':
-         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n -y : Input Format (float, double, int16_t, etc)\n -j : Num Threads\n");
+         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n -y : Input Format (float, double, int16_t, etc)\n -j : Num Threads\n -S : In File Start Position\n -E : In File End Position\n");
          exit(0);
       break;
       default:
@@ -77,16 +85,16 @@ int main(int argc, char *argv[])
 
    if(inPath != "" && sampleRate > 0 && fftSize > 0 && timeBetweenFfts > 0 && outPath != "")
    {
-           if(inputFormat == "int8_t")   {GenHeatMap<int8_t>  (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "int16_t")  {GenHeatMap<int16_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "int32_t")  {GenHeatMap<int32_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "int64_t")  {GenHeatMap<int64_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "uint8_t")  {GenHeatMap<uint8_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "uint16_t") {GenHeatMap<uint16_t>(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "uint32_t") {GenHeatMap<uint32_t>(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "uint64_t") {GenHeatMap<uint64_t>(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "float")    {GenHeatMap<float>   (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
-      else if(inputFormat == "double")   {GenHeatMap<double>  (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, outPath);}
+           if(inputFormat == "int8_t")   {GenHeatMap<int8_t>  (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "int16_t")  {GenHeatMap<int16_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "int32_t")  {GenHeatMap<int32_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "int64_t")  {GenHeatMap<int64_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "uint8_t")  {GenHeatMap<uint8_t> (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "uint16_t") {GenHeatMap<uint16_t>(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "uint32_t") {GenHeatMap<uint32_t>(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "uint64_t") {GenHeatMap<uint64_t>(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "float")    {GenHeatMap<float>   (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
+      else if(inputFormat == "double")   {GenHeatMap<double>  (inPath, sampleRate, fftSize, timeBetweenFfts, numThreads, startPosition, endPosition, outPath);}
       else{printf("Invalid Input Format\n");}
    }
    else
