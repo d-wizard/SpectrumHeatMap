@@ -26,7 +26,6 @@ set(includes
 # Source files
 set(source
    fftHelper.cpp
-   FileToHeatMap.cpp
    hsvrgb.cpp
    LevelToHeatMap.cpp)
 
@@ -41,6 +40,6 @@ add_library(${projName} STATIC ${source})
 target_compile_options(${projName} PRIVATE ${c_cppFlags})
 target_compile_options(${projName} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${cppOnlyFlags}>)
 target_compile_definitions(${projName} PRIVATE ${defines})
-target_include_directories(${projName} PRIVATE ${includes})
+target_include_directories(${projName} PUBLIC ${includes})
 target_link_libraries(${projName} PUBLIC ${libs})
 

@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
    if(inPath != "" && sampleRate > 0 && fftSize > 0 && timeBetweenFfts > 0 && outPath != "")
    {
-      FileToHeatMap f2hm(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads);
+      FileToHeatMap<int16_t> f2hm(inPath, sampleRate, fftSize, timeBetweenFfts, numThreads);
       f2hm.genHeatMap();
       f2hm.saveBmp(outPath, true);
    }
