@@ -15,14 +15,26 @@
 #include "hsvrgb.h"
 #include "BitmapPlusPlus.hpp"
 
+typedef struct tFileToHeatMapConfig
+{
+   std::string filePath = "";
+   double sampleRate = 1.0;
+   size_t fftSize = 1024;
+   double timeBetweenFfts = 1.0;
+   size_t numThreads = 1;
+   int64_t startPosition = 0;
+   int64_t endPosition = 0;
+} tFileToHeatMapConfig;   
+
 template<typename tSampType>
 class FileToHeatMap
 {
 public:
    // Public Constants
    static constexpr size_t COMPLEX_SAMP_SIZE = 2*sizeof(tSampType);
+
 public:
-   FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads, int64_t startPosition = 0, int64_t endPosition = 0);
+   FileToHeatMap(const tFileToHeatMapConfig& config);
    virtual ~FileToHeatMap();
 
    void genHeatMap();
@@ -108,12 +120,12 @@ private:
 
 
 template<typename tSampType>
-FileToHeatMap<tSampType>::FileToHeatMap(const std::string& filePath, double sampleRate, size_t fftSize, double timeBetweenFfts, size_t numThreads, int64_t startPosition, int64_t endPosition)
-   : m_filePath(filePath)
-   , m_sampleRate(sampleRate)
-   , m_fftSize(fftSize)
-   , m_timeBetweenFfts(timeBetweenFfts)
-   , m_numThreads(numThreads) 
+FileToHeatMap<tSampType>::FileToHeatMap(const tFileToHeatMapConfig& config)
+   : m_filePath(config.filePath)
+   , m_sampleRate(config.sampleRate)
+   , m_fftSize(config.fftSize)
+   , m_timeBetweenFfts(config.timeBetweenFfts)
+   , m_numThreads(config.numThreads) 
 {
    try
    {
@@ -127,13 +139,15 @@ FileToHeatMap<tSampType>::FileToHeatMap(const std::string& filePath, double samp
       // Convert input postion Values to within range of the file (interpret as slicing indexes)
       bool validStartEndPos = true;
       int64_t fileSizeBytesSigned = int64_t(m_fileSizeBytes);
+      auto startPosition = config.startPosition;
+      auto endPosition = config.endPosition;
       if(validStartEndPos)
       {
          if(startPosition < 0)
          {
             startPosition += fileSizeBytesSigned;
             if(startPosition < 0)
-               validStartEndPos = false; // Invalid. Drop the entire file.
+               startPosition = 0; // Start at the beginning.
          }
          else if(startPosition >= fileSizeBytesSigned)
             validStartEndPos = false; // Not enough data in the file. Drop the entire file.
@@ -147,9 +161,7 @@ FileToHeatMap<tSampType>::FileToHeatMap(const std::string& filePath, double samp
                validStartEndPos = false; // Invalid. Drop the entire file.
          }
          else if(endPosition > fileSizeBytesSigned)
-         {
-            validStartEndPos = false; // Not enough data in the file. Drop the entire file.
-         }
+            endPosition = fileSizeBytesSigned; // Read to the end of the file.
       }
       if(startPosition >= endPosition)
          validStartEndPos = false; // Not enough data in the file. Drop the entire file.
