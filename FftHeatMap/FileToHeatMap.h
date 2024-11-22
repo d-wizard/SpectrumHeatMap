@@ -11,6 +11,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <algorithm>
+#include <type_traits> // Used to determine if template type is floating point or not.
 #include "fftHelper.h"
 #include "hsvrgb.h"
 #include "BitmapPlusPlus.hpp"
@@ -92,6 +93,8 @@ private:
    // FFT Results
    std::vector<double> m_fft_dB;
    std::vector<uint8_t> m_rgb;
+
+   double m_fftToRgb_max; // Anything dB value above this will be the max RGB value.
 
    // Threading
    std::list<tFftParamPtr> m_fftThreadsAvailable;
@@ -191,6 +194,18 @@ FileToHeatMap<tSampType>::FileToHeatMap(const tFileToHeatMapConfig& config)
 
       m_rgb.resize(3*m_numFfts*m_fftSize);
       m_fft_dB.resize(m_numFfts*m_fftSize);
+
+      // Determine Max FFT value
+      if(std::is_floating_point<tSampType>())
+      {
+         // Floating point values could be anything. Set max to 0 dB
+         m_fftToRgb_max = 0;
+      }
+      else
+      {
+         // Set to max
+         m_fftToRgb_max = 20.0 * log10(double(std::numeric_limits<tSampType>::max()));
+      }
 
       // Create Worker Thread Params
       if(m_numThreads <= 0){m_numThreads = 1;}
@@ -315,10 +330,9 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
 template<typename tSampType>
 void FileToHeatMap<tSampType>::fftToRgb()
 {
-
-   constexpr double MAX_DB_FS_VAL = 90;
-   constexpr double MIN_DB_FS_VAL = -30;
-   constexpr double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
+   const double MAX_DB_FS_VAL = m_fftToRgb_max;
+   const double MIN_DB_FS_VAL = m_fftToRgb_max - 120;
+   const double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
 
 #ifdef FORCE_HUE_FFT
    size_t fftBin = 0;
