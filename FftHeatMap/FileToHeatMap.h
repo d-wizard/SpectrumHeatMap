@@ -25,8 +25,9 @@ typedef struct tFileToHeatMapConfig
    size_t numThreads = 1;
    int64_t startPosition = 0;
    int64_t endPosition = 0;
-   double maxLevelDb = std::numeric_limits<double>::infinity(); // init to invalid value
    bool normalizeHeatMap = false;
+   double maxLevelDb = std::numeric_limits<double>::infinity(); // init to invalid value
+   double rangeDb = 100.0;
 } tFileToHeatMapConfig;   
 
 template<typename tSampType>
@@ -96,8 +97,9 @@ private:
    std::vector<double> m_fft_dB;
    std::vector<uint8_t> m_rgb;
 
-   double m_fftToRgb_max = 0; // Any dB value above this will be the max RGB value.
    bool m_normalizeHeatMap = false;
+   double m_fftToRgb_max_dB = 0; // Any dB value above this will be the max RGB value.
+   double m_fftToRgb_range_dB;
 
    // Threading
    std::list<tFftParamPtr> m_fftThreadsAvailable;
@@ -172,7 +174,6 @@ FileToHeatMap<tSampType>::FileToHeatMap(const tFileToHeatMapConfig& config)
       if(startPosition >= endPosition)
          validStartEndPos = false; // Not enough data in the file. Drop the entire file.
 
-
       if(validStartEndPos)
       {
          m_numSamples = (endPosition - startPosition) / COMPLEX_SAMP_SIZE;
@@ -201,11 +202,17 @@ FileToHeatMap<tSampType>::FileToHeatMap(const tFileToHeatMapConfig& config)
       // Determine Max FFT value
       m_normalizeHeatMap = config.normalizeHeatMap;
       if(std::isfinite(config.maxLevelDb))
-         m_fftToRgb_max = config.maxLevelDb; // Use the user specified value.
+         m_fftToRgb_max_dB = config.maxLevelDb; // Use the user specified value.
       else if(std::is_floating_point<tSampType>())
-         m_fftToRgb_max = 0; // Floating point values could be anything. Set max to 0 dB
+         m_fftToRgb_max_dB = 0; // Floating point values could be anything. Set max to 0 dB
       else
-         m_fftToRgb_max = 20.0 * log10(double(std::numeric_limits<tSampType>::max())); // Set to max
+         m_fftToRgb_max_dB = 20.0 * log10(double(std::numeric_limits<tSampType>::max())); // Set to max
+
+      m_fftToRgb_range_dB = config.rangeDb;
+      if(!std::isfinite(m_fftToRgb_range_dB) || m_fftToRgb_range_dB <= 0 || m_fftToRgb_range_dB > 1000) // Make sure the value makes sense.
+      {
+         m_fftToRgb_range_dB = 100;
+      }
 
       // Create Worker Thread Params
       if(m_numThreads <= 0){m_numThreads = 1;}
@@ -330,8 +337,8 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
 template<typename tSampType>
 void FileToHeatMap<tSampType>::fftToRgb()
 {
-   const double MAX_DB_FS_VAL = m_normalizeHeatMap ? m_fftMax_dB : m_fftToRgb_max;
-   const double MIN_DB_FS_VAL = MAX_DB_FS_VAL - 120;
+   const double MAX_DB_FS_VAL = m_normalizeHeatMap ? m_fftMax_dB : m_fftToRgb_max_dB;
+   const double MIN_DB_FS_VAL = MAX_DB_FS_VAL - m_fftToRgb_range_dB;
    const double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
 
 #ifdef FORCE_HUE_FFT
