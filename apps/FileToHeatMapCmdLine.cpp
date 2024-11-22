@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
    std::string outPath;
    std::string inputFormat;
 
-   const char* argStr = "i:o:s:f:t:j:y:S:E:h";
+   const char* argStr = "i:o:s:f:t:j:y:nm:r:S:E:h";
    int option = -1;
    while((option = getopt(argc, argv, argStr)) != -1)
    {
@@ -67,6 +67,15 @@ int main(int argc, char *argv[])
       case 'y':
          inputFormat = std::string(optarg);
       break;
+      case 'n':
+         config.normalizeHeatMap = true;
+      break;
+      case 'm':
+         config.maxLevelDb = strtod(optarg, nullptr);
+      break;
+      case 'r':
+         config.rangeDb = strtod(optarg, nullptr);
+      break;
       case 'S':
          config.startPosition = strtoll(optarg, nullptr, 10);
       break;
@@ -74,7 +83,10 @@ int main(int argc, char *argv[])
          config.endPosition = strtoll(optarg, nullptr, 10);
       break;
       case 'h':
-         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n -y : Input Format (float, double, int16_t, etc)\n -j : Num Threads\n -S : In File Start Position\n -E : In File End Position\n");
+         printf("Help:\n -i : input file\n -o : output file\n -s : sample rate\n -f : FFT Size\n -t : Time Between FFTs\n"
+             " -y : Input Format (float, double, int16_t, etc)\n -j : Num Threads\n" 
+             " -n : Use this to normalize max to the detected peak value.\n -m : Max FFT bin value in dB\n -r : Range of the Heat Map in dB\n"
+             " -S : In File Start Position\n -E : In File End Position\n" );
          exit(0);
       break;
       default:
