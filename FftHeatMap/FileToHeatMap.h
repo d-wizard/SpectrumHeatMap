@@ -15,6 +15,7 @@
 #include "fftHelper.h"
 #include "hsvrgb.h"
 #include "BitmapPlusPlus.hpp"
+#include "fpng.h"
 
 typedef struct tFileToHeatMapConfig
 {
@@ -44,6 +45,7 @@ public:
    void genHeatMap();
 
    void saveBmp(const std::string& savePath, bool rotate = false);
+   void savePng(const std::string& savePath, bool rotate = false);
 
    size_t getFftSize(){return m_fftSize;}
    size_t getNumFfts(){return m_numFfts;}
@@ -389,7 +391,7 @@ void FileToHeatMap<tSampType>::saveBmp(const std::string& savePath, bool rotate)
    fftToRgb();
    if(rotate)
    {
-      // X Axis is Time, Y Axis is Frequency
+      // X Axis is Time, Y Axis is Frequency, m_numFfts = width, m_fftSize = height
       bmp::Bitmap image(m_numFfts, m_fftSize);
       size_t fftBinIndex = 0;
       size_t fftIndex = 0;
@@ -409,7 +411,7 @@ void FileToHeatMap<tSampType>::saveBmp(const std::string& savePath, bool rotate)
    }
    else
    {
-      // X Axis is Frequency, Y Axis is Time
+      // X Axis is Frequency, Y Axis is Time, m_fftSize = width, m_numFfts = height
       bmp::Bitmap image(m_fftSize, m_numFfts);
       size_t i = 0;
       for (bmp::Pixel &pixel: image)
@@ -420,6 +422,41 @@ void FileToHeatMap<tSampType>::saveBmp(const std::string& savePath, bool rotate)
          ++i;
       }
       image.save(savePath);
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename tSampType>
+void FileToHeatMap<tSampType>::savePng(const std::string& savePath, bool rotate)
+{
+   fftToRgb();
+   fpng::fpng_init();
+   if(rotate)
+   {
+      // X Axis is Time, Y Axis is Frequency, m_numFfts = width, m_fftSize = height
+      std::vector<uint8_t> rotateRgb(3*m_numFfts*m_fftSize);
+      size_t fftBinIndex = 0;
+      size_t fftIndex = 0;
+      size_t numPixels = m_numFfts*m_fftSize;
+      for(size_t outIndex = 0; outIndex < numPixels; ++outIndex)
+      {
+         size_t inIndex = m_fftSize*fftIndex+fftBinIndex;
+         rotateRgb[3*outIndex+0] = m_rgb[3*inIndex+0];
+         rotateRgb[3*outIndex+1] = m_rgb[3*inIndex+1];
+         rotateRgb[3*outIndex+2] = m_rgb[3*inIndex+2];
+         if(++fftIndex == m_numFfts)
+         {
+            fftIndex = 0;
+            ++fftBinIndex;
+         }
+      }
+      fpng::fpng_encode_image_to_file(savePath.c_str(), rotateRgb.data(), m_numFfts, m_fftSize, 3);
+   }
+   else
+   {
+      // X Axis is Frequency, Y Axis is Time, m_fftSize = width, m_numFfts = height
+      fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), m_fftSize, m_numFfts, 3);
    }
 }
 

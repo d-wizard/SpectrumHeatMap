@@ -21,6 +21,7 @@ set(defines
 # Include paths
 set(includes
    ../BitmapPlusPlus
+   ../fftw-3.3.10/api
    )
 
 # Source files
@@ -31,7 +32,8 @@ set(source
 
 # Libraries
 set(libs
-   fftw3)
+   fftw3
+   fpng_lib)
 
 # Build the library
 add_library(${projName} STATIC ${source})
