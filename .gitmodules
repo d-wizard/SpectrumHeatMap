@@ -4,3 +4,6 @@
 [submodule "BitmapPlusPlus"]
 	path = BitmapPlusPlus
 	url = https://github.com/baderouaich/BitmapPlusPlus.git
+[submodule "fpng"]
+	path = fpng
+	url = https://github.com/richgel999/fpng.git
