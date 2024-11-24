@@ -297,9 +297,7 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
    }
 
    // Run the FFT.
-   std::unique_lock<std::mutex> lock(m_threadMutex);
-   complexFFT(lock, param->iSamples, param->qSamples, param->fftRe, param->fftIm, m_fftWindow.data());
-   lock.unlock();
+   complexFFT(m_threadMutex, param->iSamples, param->qSamples, param->fftRe, param->fftIm, m_fftWindow.data());
 
    // Store FFT Magnitude information.
    double* fftRe = param->fftRe.data();
@@ -323,7 +321,7 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
    }
 
    // Store stats and put the thread in the finish list.
-   lock.lock();
+   std::lock_guard<std::mutex> lock(m_threadMutex);
    if(m_fftMaxMinNeedInit)
    {
       m_fftMaxMinNeedInit = false;

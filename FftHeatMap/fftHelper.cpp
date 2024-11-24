@@ -69,7 +69,7 @@ static void fixStartNanReal(fftw_complex* in, unsigned int N)
    }
 }
 
-void complexFFT(std::unique_lock<std::mutex>& lock, const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVect& outIm, double *windowCoef)
+void complexFFT(std::mutex& fftwMutex, const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVect& outIm, double *windowCoef)
 {
    fftw_complex *in, *out;
    fftw_plan p;
@@ -101,13 +101,15 @@ void complexFFT(std::unique_lock<std::mutex>& lock, const dubVect& inRe, const d
        // Overwrite NaN samples at the beginning with 0's
        fixStartNanComplex(in, N);
 
+       std::unique_lock<std::mutex> lock(fftwMutex);
        p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-
        lock.unlock();
-       fftw_execute(p);
-       lock.lock();
 
+       fftw_execute(p);
+
+       lock.lock();
        fftw_destroy_plan(p);
+       lock.unlock();
 
        outRe.resize(N);
        outIm.resize(N);

@@ -21,7 +21,7 @@
 #include <mutex>
 #include "helperTypes.h"
 
-void complexFFT(std::unique_lock<std::mutex>& lock, const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVect& outIm, double* windowCoef = NULL);
+void complexFFT(std::mutex& fftwMutex, const dubVect& inRe, const dubVect& inIm, dubVect& outRe, dubVect& outIm, double* windowCoef = NULL);
 
 void realFFT(const dubVect& inRe, dubVect& outRe, double* windowCoef = NULL);
 
