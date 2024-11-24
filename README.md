@@ -3,7 +3,7 @@
 This will take in files that contain IQ samples and generate Heat Map Spectrum images.
 
 ## Setup
-These instructions are for Linux builds. FFTW is being used and it does things differenly for Windows. It shouldn't be to get this working for Windows builds.
+These instructions are for Linux builds. FFTW is being used and it does things differently for Windows. It shouldn't be too hard to get this working for Windows builds.
 
 * Get submodules
 ```
