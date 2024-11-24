@@ -95,6 +95,9 @@ private:
    size_t m_fileSizeBytes = 0;
    size_t m_fileStartOffset = 0;
 
+   // FFT Window
+   std::vector<double> m_fftWindow;
+
    // FFT Results
    std::vector<double> m_fft_dB;
    std::vector<uint8_t> m_rgb;
@@ -216,6 +219,10 @@ FileToHeatMap<tSampType>::FileToHeatMap(const tFileToHeatMapConfig& config)
          m_fftToRgb_range_dB = 100;
       }
 
+      // Generate Window Coefs
+      m_fftWindow.resize(m_fftSize);
+      genWindowCoef(m_fftWindow.data(), m_fftSize, true);
+
       // Create Worker Thread Params
       if(m_numThreads <= 0){m_numThreads = 1;}
       for(size_t i = 0; i < m_numThreads; ++i)
@@ -291,7 +298,7 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
 
    // Run the FFT.
    std::unique_lock<std::mutex> lock(m_threadMutex);
-   complexFFT(lock, param->iSamples, param->qSamples, param->fftRe, param->fftIm);
+   complexFFT(lock, param->iSamples, param->qSamples, param->fftRe, param->fftIm, m_fftWindow.data());
    lock.unlock();
 
    // Store FFT Magnitude information.
