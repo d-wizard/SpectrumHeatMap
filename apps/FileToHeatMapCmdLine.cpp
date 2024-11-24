@@ -25,7 +25,7 @@ void GenHeatMap(tFileToHeatMapConfig& config, const std::string& outPath)
 {
    FileToHeatMap<tSampType> f2hm(config);
    f2hm.genHeatMap();
-   f2hm.saveBmp(outPath, true);
+   f2hm.savePng(outPath, true);
 }
 
 int main(int argc, char *argv[])

@@ -451,12 +451,12 @@ void FileToHeatMap<tSampType>::savePng(const std::string& savePath, bool rotate)
             ++fftBinIndex;
          }
       }
-      fpng::fpng_encode_image_to_file(savePath.c_str(), rotateRgb.data(), m_numFfts, m_fftSize, 3);
+      fpng::fpng_encode_image_to_file(savePath.c_str(), rotateRgb.data(), m_numFfts, m_fftSize, 3, fpng::FPNG_ENCODE_SLOWER);
    }
    else
    {
       // X Axis is Frequency, Y Axis is Time, m_fftSize = width, m_numFfts = height
-      fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), m_fftSize, m_numFfts, 3);
+      fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), m_fftSize, m_numFfts, 3, fpng::FPNG_ENCODE_SLOWER);
    }
 }
 
