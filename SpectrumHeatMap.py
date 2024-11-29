@@ -178,7 +178,12 @@ def main():
 
       else:
          # Single file. Not making a new directory here.
-         pass
+         outFileName = outFileName + '.png' if outFileName != None else os.path.split(inFile)[1] + '.png'
+         outFileName = outFileName.replace('.png.png', '.png')
+
+         cmdLine = app_path + ' -i ' + inFile + ' -o ' + os.path.join(outDir, outFileName) + fixedArgs
+         os.system(cmdLine)
+
 
 
 ################################################################################
