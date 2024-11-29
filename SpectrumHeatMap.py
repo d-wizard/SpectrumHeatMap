@@ -110,8 +110,9 @@ def main():
       fixedArgs += (' -r ' + str(args.range_db))
 
    # Deterine max input size
-   maxInputSize = 0 # init to invalid.
-   if args.max_ffts != None:
+   fftChunkOffsetIncr = 0 # init to invalid.
+   fftChunkSize = 0 # init to invalid.
+   if args.max_ffts != None and args.max_ffts > 0:
       inTypeSize = 1 # Define to 1 byte per value
       if '64' in args.format or 'double' == args.format.lower():
          inTypeSize = 8
@@ -119,8 +120,15 @@ def main():
          inTypeSize = 4
       elif '16' in args.format:
          inTypeSize = 2
-      fftSizeBytes = inTypeSize * args.fft_size * 2 # 2x because the app assumes complex samples
-      maxInputSize = fftSizeBytes * args.max_ffts
+
+      sampBetweenFfts = int(args.samp_rate * args.time + 0.5)
+
+      fftChunkOffsetIncrSamp = args.fft_size + (args.max_ffts - 1) * sampBetweenFfts
+      fftChunkSizeSamp = sampBetweenFfts * args.max_ffts
+
+      # Convert to bytes.
+      fftChunkOffsetIncr = 2 * inTypeSize * fftChunkOffsetIncrSamp # 2x because the app assumes complex samples
+      fftChunkSize = 2 * inTypeSize * fftChunkSizeSamp # 2x because the app assumes complex samples
 
    # Figure out base directory to store output files.
    outBaseDir = None
@@ -153,7 +161,7 @@ def main():
    for inFile in filesToParse:
       # Determine output directory
       outDir = os.path.dirname(inFile) if outBaseDir == None else outBaseDir
-      if maxInputSize > 0:
+      if fftChunkOffsetIncr > 0 and fftChunkSize > 0:
          # Splitting into multiple files. Make a subdirectory with the input name.
          outDir = os.path.join(outDir, os.path.split(inFile)[1] + "_" + uniqueStr)
          os.makedirs(outDir)
@@ -163,13 +171,11 @@ def main():
          inputOffset = 0
          outIndex = 0
          while inputOffset < totalFileSize:
-            chunkSize = maxInputSize if (inputOffset + maxInputSize) <= totalFileSize else totalFileSize - inputOffset
-
             outFileName = os.path.split(inFile)[1] + "_" + str(outIndex) + '.png'
 
-            cmdLine = app_path + ' -i ' + inFile + ' -o ' + os.path.join(outDir, outFileName) + fixedArgs + ' -S ' + str(inputOffset) + ' -E ' + str(inputOffset+chunkSize)
+            cmdLine = app_path + ' -i ' + inFile + ' -o ' + os.path.join(outDir, outFileName) + fixedArgs + ' -S ' + str(inputOffset) + ' -E ' + str(inputOffset+fftChunkSize)
             print(cmdLine)
-            inputOffset += chunkSize
+            inputOffset += fftChunkOffsetIncr
             outIndex += 1
 
       else:
