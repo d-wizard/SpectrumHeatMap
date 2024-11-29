@@ -122,7 +122,7 @@ private:
    /////////////////////////////////////////////////////////////////////////////
    void readFromFile(std::shared_ptr<tFftParam> param, size_t fftNum);
    void doFft(std::shared_ptr<tFftParam> param);
-   void fftToRgb();
+   void fftToRgb(bool rotate);
 
 };
 
@@ -342,49 +342,38 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
 ////////////////////////////////////////////////////////////////////////////////
 
 template<typename tSampType>
-void FileToHeatMap<tSampType>::fftToRgb()
+void FileToHeatMap<tSampType>::fftToRgb(bool rotate)
 {
    const double MAX_DB_FS_VAL = m_normalizeHeatMap ? m_fftMax_dB : m_fftToRgb_max_dB;
    const double MIN_DB_FS_VAL = MAX_DB_FS_VAL - m_fftToRgb_range_dB;
    const double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
 
-#ifdef FORCE_HUE_FFT
-   size_t fftBin = 0;
-#endif
-
    uint8_t* rgbWritePtr = m_rgb.data();
-   for(size_t i = 0; i < m_fftSize*m_numFfts; ++i)
+   size_t fftBinIndex = 0;
+   size_t fftIndex = 0;
+   size_t numPixels = m_numFfts*m_fftSize;
+   for(size_t outIndex = 0; outIndex < numPixels; ++outIndex)
    {
-      double normVal = (m_fft_dB[i] - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
+      size_t inIndex = rotate ? m_fftSize*fftIndex+fftBinIndex : outIndex;
+      double normVal = (m_fft_dB[inIndex] - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
       if(normVal > 1.0){normVal = 1.0;}
       if(normVal < 0.0){normVal = 0.0;}
       uint8_t fftNormVal = uint8_t((1.0-normVal)*255.0);
 
-#if 0 // HUE Based
-      HsvColor hsv = {0,0xff,0xff};
-      hsv.h = fftNormVal;
-#ifdef FORCE_HUE_FFT
-      hsv.h = uint8_t(double(fftBin)*255.0/double(m_fftSize));
-#endif
-
-      hsv.v = 255-hsv.h; // Set brightness inverse to hue (i.e. brightness goes down when FFT mag goes down).
-
-      auto rgb = HsvToRgb(hsv);
-      rgbWritePtr[3*i+0] = rgb.r;
-      rgbWritePtr[3*i+1] = rgb.g;
-      rgbWritePtr[3*i+2] = rgb.b;
-
-#ifdef FORCE_HUE_FFT
-      if(++fftBin >= m_fftSize){fftBin=0;}
-#endif
-#else
       // Lookup table based
       extern RgbColor LevelToRgbLookup[256];
-      rgbWritePtr[3*i+0] = LevelToRgbLookup[fftNormVal].r;
-      rgbWritePtr[3*i+1] = LevelToRgbLookup[fftNormVal].g;
-      rgbWritePtr[3*i+2] = LevelToRgbLookup[fftNormVal].b;
-#endif
-
+      rgbWritePtr[3*outIndex+0] = LevelToRgbLookup[fftNormVal].r;
+      rgbWritePtr[3*outIndex+1] = LevelToRgbLookup[fftNormVal].g;
+      rgbWritePtr[3*outIndex+2] = LevelToRgbLookup[fftNormVal].b;
+      
+      if(rotate)
+      {
+         if(++fftIndex == m_numFfts)
+         {
+            fftIndex = 0;
+            ++fftBinIndex;
+         }
+      }
    }
 }
 
@@ -393,41 +382,19 @@ void FileToHeatMap<tSampType>::fftToRgb()
 template<typename tSampType>
 void FileToHeatMap<tSampType>::saveBmp(const std::string& savePath, bool rotate)
 {
-   fftToRgb();
-   if(rotate)
+   fftToRgb(rotate);
+   size_t height = rotate ? m_fftSize : m_numFfts;
+   size_t width  = rotate ? m_numFfts : m_fftSize;
+   bmp::Bitmap image(width, height);
+   size_t i = 0;
+   for (bmp::Pixel &pixel: image)
    {
-      // X Axis is Time, Y Axis is Frequency, m_numFfts = width, m_fftSize = height
-      bmp::Bitmap image(m_numFfts, m_fftSize);
-      size_t fftBinIndex = 0;
-      size_t fftIndex = 0;
-      for (bmp::Pixel &pixel: image)
-      {
-         size_t i = m_fftSize*fftIndex+fftBinIndex;
-         pixel.r = m_rgb[3*i+0];
-         pixel.g = m_rgb[3*i+1];
-         pixel.b = m_rgb[3*i+2];
-         if(++fftIndex == m_numFfts)
-         {
-            fftIndex = 0;
-            ++fftBinIndex;
-         }
-      }
-      image.save(savePath);
+      pixel.r = m_rgb[3*i+0];
+      pixel.g = m_rgb[3*i+1];
+      pixel.b = m_rgb[3*i+2];
+      ++i;
    }
-   else
-   {
-      // X Axis is Frequency, Y Axis is Time, m_fftSize = width, m_numFfts = height
-      bmp::Bitmap image(m_fftSize, m_numFfts);
-      size_t i = 0;
-      for (bmp::Pixel &pixel: image)
-      {
-         pixel.r = m_rgb[3*i+0];
-         pixel.g = m_rgb[3*i+1];
-         pixel.b = m_rgb[3*i+2];
-         ++i;
-      }
-      image.save(savePath);
-   }
+   image.save(savePath);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -435,33 +402,11 @@ void FileToHeatMap<tSampType>::saveBmp(const std::string& savePath, bool rotate)
 template<typename tSampType>
 void FileToHeatMap<tSampType>::savePng(const std::string& savePath, bool rotate)
 {
-   fftToRgb();
+   fftToRgb(rotate);
    fpng::fpng_init();
-   if(rotate)
-   {
-      // X Axis is Time, Y Axis is Frequency, m_numFfts = width, m_fftSize = height
-      std::vector<uint8_t> rotateRgb(3*m_numFfts*m_fftSize);
-      size_t fftBinIndex = 0;
-      size_t fftIndex = 0;
-      size_t numPixels = m_numFfts*m_fftSize;
-      for(size_t outIndex = 0; outIndex < numPixels; ++outIndex)
-      {
-         size_t inIndex = m_fftSize*fftIndex+fftBinIndex;
-         rotateRgb[3*outIndex+0] = m_rgb[3*inIndex+0];
-         rotateRgb[3*outIndex+1] = m_rgb[3*inIndex+1];
-         rotateRgb[3*outIndex+2] = m_rgb[3*inIndex+2];
-         if(++fftIndex == m_numFfts)
-         {
-            fftIndex = 0;
-            ++fftBinIndex;
-         }
-      }
-      fpng::fpng_encode_image_to_file(savePath.c_str(), rotateRgb.data(), m_numFfts, m_fftSize, 3, fpng::FPNG_ENCODE_SLOWER);
-   }
-   else
-   {
-      // X Axis is Frequency, Y Axis is Time, m_fftSize = width, m_numFfts = height
-      fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), m_fftSize, m_numFfts, 3, fpng::FPNG_ENCODE_SLOWER);
-   }
+   size_t height = rotate ? m_fftSize : m_numFfts;
+   size_t width  = rotate ? m_numFfts : m_fftSize;
+   fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), width, height, 3, fpng::FPNG_ENCODE_SLOWER);
+
 }
 
