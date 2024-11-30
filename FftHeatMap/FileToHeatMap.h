@@ -47,6 +47,8 @@ public:
    void saveBmp(const std::string& savePath, bool rotate = false);
    void savePng(const std::string& savePath, bool rotate = false);
 
+   void savePngSplit(const std::string& savePathNoExt, size_t maxNumFftsPerFile, bool rotate = false);
+
    size_t getFftSize(){return m_fftSize;}
    size_t getNumFfts(){return m_numFfts;}
    uint8_t* getRgb(){return m_rgb.data();}
@@ -408,5 +410,34 @@ void FileToHeatMap<tSampType>::savePng(const std::string& savePath, bool rotate)
    size_t width  = rotate ? m_numFfts : m_fftSize;
    fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), width, height, 3, fpng::FPNG_ENCODE_SLOWER);
 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename tSampType>
+void FileToHeatMap<tSampType>::savePngSplit(const std::string& savePathNoExt, size_t maxNumFftsPerFile, bool rotate)
+{
+   if(rotate)
+      return; // Doesn't work for now.
+   fftToRgb(rotate);
+   fpng::fpng_init();
+
+   size_t fileIndex = 0;
+   size_t fftIndex = 0;
+   while(fftIndex < m_numFfts)
+   {
+      // Determine how many FFTs to put in this file (i.e. the last file might be smaller than maxNumFftsPerFile)
+      size_t numFftsInThisFile = (fftIndex+maxNumFftsPerFile) <= m_numFfts ? maxNumFftsPerFile : (m_numFfts-fftIndex);
+
+      // Determine the image file parameters and save the file.
+      size_t height = rotate ? m_fftSize : numFftsInThisFile;
+      size_t width  = rotate ? numFftsInThisFile : m_fftSize;
+      std::string savePath = savePathNoExt + "_" + std::to_string(fileIndex) + ".png";
+      fpng::fpng_encode_image_to_file(savePath.c_str(), &m_rgb[3*fftIndex*m_fftSize], width, height, 3, fpng::FPNG_ENCODE_SLOWER);
+
+      // Update loop parameters.
+      fftIndex += numFftsInThisFile;
+      ++fileIndex;
+   }
 }
 
