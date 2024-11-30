@@ -65,6 +65,8 @@ def main():
    parser.add_argument("-n", "--normalize", action='store_true', help="Use this to normalize max to the detected peak value.")
    parser.add_argument("-m", "--max_db", type=float, help="Max FFT bin value in dB.")
    parser.add_argument("-r", "--range_db", type=float, help="Range of the Heat Map in dB.")
+   parser.add_argument("-S", "--start_offset", type=int, help="In File Start Position.")
+   parser.add_argument("-E", "--end_offset", type=int, help="In File End Position.")
    parser.add_argument("-M", "--max_ffts", type=int, help="If specified, the output will be split into multiple files.")
    args = parser.parse_args()
 
@@ -108,24 +110,12 @@ def main():
       fixedArgs += (' -m ' + str(args.max_db))
    if args.range_db != None:
       fixedArgs += (' -r ' + str(args.range_db))
-
-   # Deterine max input size
-   fftChunkOffsetIncr = 0 # init to invalid.
-   if args.max_ffts != None and args.max_ffts > 0:
-      inTypeSize = 1 # Define to 1 byte per value
-      if '64' in args.format or 'double' == args.format.lower():
-         inTypeSize = 8
-      elif '32' in args.format or 'float' == args.format.lower():
-         inTypeSize = 4
-      elif '16' in args.format:
-         inTypeSize = 2
-
-      sampBetweenFfts = int(args.samp_rate * args.time + 0.5)
-
-      fftChunkOffsetIncrSamp = args.fft_size + (args.max_ffts - 1) * sampBetweenFfts
-
-      # Convert to bytes.
-      fftChunkOffsetIncr = 2 * inTypeSize * fftChunkOffsetIncrSamp # 2x because the app assumes complex samples
+   if args.start_offset != None:
+      fixedArgs += (' -S ' + str(args.start_offset))
+   if args.end_offset != None:
+      fixedArgs += (' -E ' + str(args.end_offset))
+   if args.max_ffts != None:
+      fixedArgs += (' -M ' + str(args.max_ffts))
 
    # Figure out base directory to store output files.
    outBaseDir = None
@@ -158,31 +148,12 @@ def main():
    for inFile in filesToParse:
       # Determine output directory
       outDir = os.path.dirname(inFile) if outBaseDir == None else outBaseDir
-      if fftChunkOffsetIncr > 0:
-         # Splitting into multiple files. Make a subdirectory with the input name.
-         outDir = os.path.join(outDir, os.path.split(inFile)[1] + "_" + uniqueStr)
-         os.makedirs(outDir)
 
-         # Loop until no more bytes are left
-         totalFileSize = os.path.getsize(inFile)
-         inputOffset = 0
-         outIndex = 0
-         while inputOffset < totalFileSize:
-            outFileName = os.path.split(inFile)[1] + "_" + str(outIndex) + '.png'
+      # Single file. Not making a new directory here.
+      outFileName = outFileName if outFileName != None else os.path.split(inFile)[1]
 
-            cmdLine = app_path + ' -i ' + inFile + ' -o ' + os.path.join(outDir, outFileName) + fixedArgs + ' -S ' + str(inputOffset) + ' -E ' + str(inputOffset+fftChunkOffsetIncr)
-            os.system(cmdLine)
-
-            inputOffset += fftChunkOffsetIncr
-            outIndex += 1
-
-      else:
-         # Single file. Not making a new directory here.
-         outFileName = outFileName + '.png' if outFileName != None else os.path.split(inFile)[1] + '.png'
-         outFileName = outFileName.replace('.png.png', '.png')
-
-         cmdLine = app_path + ' -i ' + inFile + ' -o ' + os.path.join(outDir, outFileName) + fixedArgs
-         os.system(cmdLine)
+      cmdLine = app_path + ' -i ' + inFile + ' -o ' + os.path.join(outDir, outFileName) + fixedArgs
+      os.system(cmdLine)
 
 
 
