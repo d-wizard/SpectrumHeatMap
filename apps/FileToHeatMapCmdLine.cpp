@@ -28,7 +28,7 @@ void GenHeatMap(tFileToHeatMapConfig& config, const std::string& outPath, uint32
    if(maxFileSize == 0)
       f2hm.savePng(outPath + ".png", true);
    else
-      f2hm.savePngSplit(outPath, maxFileSize, false); // savePngSplit doesnt' support rotated for now.
+      f2hm.savePngSplit(outPath, maxFileSize, true);
 }
 
 int main(int argc, char *argv[])

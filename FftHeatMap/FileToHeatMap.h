@@ -124,7 +124,7 @@ private:
    /////////////////////////////////////////////////////////////////////////////
    void readFromFile(std::shared_ptr<tFftParam> param, size_t fftNum);
    void doFft(std::shared_ptr<tFftParam> param);
-   void fftToRgb(bool rotate);
+   void fftToRgb(bool rotate, size_t fftOffset = 0, size_t numFFTs = 0);
 
 };
 
@@ -203,7 +203,6 @@ FileToHeatMap<tSampType>::FileToHeatMap(const tFileToHeatMapConfig& config)
          }
       }
 
-      m_rgb.resize(3*m_numFfts*m_fftSize);
       m_fft_dB.resize(m_numFfts*m_fftSize);
 
       // Determine Max FFT value
@@ -344,19 +343,28 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
 ////////////////////////////////////////////////////////////////////////////////
 
 template<typename tSampType>
-void FileToHeatMap<tSampType>::fftToRgb(bool rotate)
+void FileToHeatMap<tSampType>::fftToRgb(bool rotate, size_t fftOffset, size_t numFFTs)
 {
    const double MAX_DB_FS_VAL = m_normalizeHeatMap ? m_fftMax_dB : m_fftToRgb_max_dB;
    const double MIN_DB_FS_VAL = MAX_DB_FS_VAL - m_fftToRgb_range_dB;
    const double DELTA_DB_FS_VAL = MAX_DB_FS_VAL - MIN_DB_FS_VAL;
 
+   if(fftOffset >= m_numFfts)
+   {
+      m_rgb.resize(0);
+      return; // Invalid offset value. Exit early
+   }
+   if(numFFTs == 0 || numFFTs > (m_numFfts-fftOffset))
+      numFFTs = (m_numFfts-fftOffset);
+
+   m_rgb.resize(3*numFFTs*m_fftSize); // Allocate memory to store RGB bytes
    uint8_t* rgbWritePtr = m_rgb.data();
    size_t fftBinIndex = 0;
-   size_t fftIndex = 0;
-   size_t numPixels = m_numFfts*m_fftSize;
+   size_t fftIndex = fftOffset;
+   size_t numPixels = numFFTs*m_fftSize;
    for(size_t outIndex = 0; outIndex < numPixels; ++outIndex)
    {
-      size_t inIndex = rotate ? m_fftSize*fftIndex+fftBinIndex : outIndex;
+      size_t inIndex = rotate ? m_fftSize*fftIndex+fftBinIndex : outIndex+fftOffset*m_fftSize;
       double normVal = (m_fft_dB[inIndex] - MIN_DB_FS_VAL) / DELTA_DB_FS_VAL;
       if(normVal > 1.0){normVal = 1.0;}
       if(normVal < 0.0){normVal = 0.0;}
@@ -370,9 +378,9 @@ void FileToHeatMap<tSampType>::fftToRgb(bool rotate)
       
       if(rotate)
       {
-         if(++fftIndex == m_numFfts)
+         if(++fftIndex >= (fftOffset+numFFTs))
          {
-            fftIndex = 0;
+            fftIndex = fftOffset;
             ++fftBinIndex;
          }
       }
@@ -417,9 +425,6 @@ void FileToHeatMap<tSampType>::savePng(const std::string& savePath, bool rotate)
 template<typename tSampType>
 void FileToHeatMap<tSampType>::savePngSplit(const std::string& savePathNoExt, size_t maxNumFftsPerFile, bool rotate)
 {
-   if(rotate)
-      return; // Doesn't work for now.
-   fftToRgb(rotate);
    fpng::fpng_init();
 
    size_t fileIndex = 0;
@@ -429,11 +434,14 @@ void FileToHeatMap<tSampType>::savePngSplit(const std::string& savePathNoExt, si
       // Determine how many FFTs to put in this file (i.e. the last file might be smaller than maxNumFftsPerFile)
       size_t numFftsInThisFile = (fftIndex+maxNumFftsPerFile) <= m_numFfts ? maxNumFftsPerFile : (m_numFfts-fftIndex);
 
+      // Convert FFT Magnatude values to RGB
+      fftToRgb(rotate, fftIndex, numFftsInThisFile);
+
       // Determine the image file parameters and save the file.
       size_t height = rotate ? m_fftSize : numFftsInThisFile;
       size_t width  = rotate ? numFftsInThisFile : m_fftSize;
       std::string savePath = savePathNoExt + "_" + std::to_string(fileIndex) + ".png";
-      fpng::fpng_encode_image_to_file(savePath.c_str(), &m_rgb[3*fftIndex*m_fftSize], width, height, 3, fpng::FPNG_ENCODE_SLOWER);
+      fpng::fpng_encode_image_to_file(savePath.c_str(), m_rgb.data(), width, height, 3, fpng::FPNG_ENCODE_SLOWER);
 
       // Update loop parameters.
       fftIndex += numFftsInThisFile;
