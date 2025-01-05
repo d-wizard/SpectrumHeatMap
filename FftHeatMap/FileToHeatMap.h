@@ -70,7 +70,7 @@ private:
       std::vector<double> qSamples;
       std::vector<double> fftRe;
       std::vector<double> fftIm;
-      double* fftWritePtr;
+      float* fftWritePtr;
 
       std::thread fftThread;
 
@@ -101,7 +101,7 @@ private:
    std::vector<double> m_fftWindow;
 
    // FFT Results
-   std::vector<double> m_fft_dB;
+   std::vector<float> m_fft_dB;
    std::vector<uint8_t> m_rgb;
 
    bool m_normalizeHeatMap = false;
@@ -303,7 +303,7 @@ void FileToHeatMap<tSampType>::doFft(std::shared_ptr<tFftParam> param)
    // Store FFT Magnitude information.
    double* fftRe = param->fftRe.data();
    double* fftIm = param->fftIm.data();
-   double* fftDbPtr = param->fftWritePtr;
+   float* fftDbPtr = param->fftWritePtr;
    double fftMax = 0;
    double fftMin = 0;
 
